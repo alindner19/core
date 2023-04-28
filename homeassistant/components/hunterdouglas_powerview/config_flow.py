@@ -21,6 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 DATA_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 HAP_SUFFIX = "._hap._tcp.local."
 POWERVIEW_SUFFIX = "._powerview._tcp.local."
+POWERVIEW_G3_SUFFIX = "._powerview-g3._tcp.local."
 
 
 async def validate_input(hass: core.HomeAssistant, hub_address: str) -> dict[str, str]:
@@ -98,7 +99,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle zeroconf discovery."""
         self.discovered_ip = discovery_info.host
         name = discovery_info.name.removesuffix(POWERVIEW_SUFFIX)
+        name = name.removesuffix(POWERVIEW_G3_SUFFIX)
         self.discovered_name = name
+        _LOGGER.debug("Zeroconf: %s %s", name, self.discovered_ip)
         return await self.async_step_discovery_confirm()
 
     async def async_step_homekit(

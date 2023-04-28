@@ -6,21 +6,12 @@ from dataclasses import dataclass
 import logging
 from typing import Any
 
-from aiopvapi.helpers.constants import (
-    ATTR_ID,
-    ATTR_POSITION1,
-    ATTR_POSITION2,
-    ATTR_POSITION_DATA,
-    ATTR_POSKIND1,
-    ATTR_POSKIND2,
-    ATTR_SHADE,
-)
+from aiopvapi.helpers.constants import ATTR_ID, ATTR_POSITION_DATA, ATTR_SHADE
 from aiopvapi.resources.shade import MIN_POSITION
 
-from .const import POS_KIND_PRIMARY, POS_KIND_SECONDARY, POS_KIND_VANE
 from .util import async_map_data_by_id
 
-POSITIONS = ((ATTR_POSITION1, ATTR_POSKIND1), (ATTR_POSITION2, ATTR_POSKIND2))
+POSITIONS = ("primary", "secondary", "tilt", "velocity")
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +26,7 @@ class PowerviewShadeMove:
     # The positions that will also change
     # as a result of the request that the
     # hub will not send back
-    new_positions: dict[int, int]
+    new_positions: dict[str, int]
 
 
 @dataclass
@@ -44,7 +35,8 @@ class PowerviewShadePositions:
 
     primary: int = MIN_POSITION
     secondary: int = MIN_POSITION
-    vane: int = MIN_POSITION
+    tilt: int = MIN_POSITION
+    velocity: int = MIN_POSITION
 
 
 class PowerviewShadeData:
@@ -83,24 +75,21 @@ class PowerviewShadeData:
         """
         self._group_data_by_id = async_map_data_by_id(shade_data)
 
-    def update_shade_position(self, shade_id: int, position: int, kind: int) -> None:
+    def update_shade_position(
+        self, shade_id: int, position: int, position_key: str
+    ) -> None:
         """Update a single shade position."""
         positions = self.get_shade_positions(shade_id)
-        if kind == POS_KIND_PRIMARY:
-            positions.primary = position
-        elif kind == POS_KIND_SECONDARY:
-            positions.secondary = position
-        elif kind == POS_KIND_VANE:
-            positions.vane = position
+        setattr(positions, position_key, position)
 
     def update_from_position_data(
         self, shade_id: int, position_data: dict[str, Any]
     ) -> None:
         """Update the shade positions from the position data."""
-        for position_key, kind_key in POSITIONS:
+        for position_key in POSITIONS:
             if position_key in position_data:
                 self.update_shade_position(
-                    shade_id, position_data[position_key], position_data[kind_key]
+                    shade_id, position_data[position_key], position_key
                 )
 
     def update_shade_positions(self, data: dict[int | str, Any]) -> None:

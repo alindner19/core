@@ -1,5 +1,6 @@
 """The powerview integration base entity."""
 
+from aiopvapi.helpers.tools import initial_api_str
 from aiopvapi.resources.shade import ATTR_TYPE, BaseShade
 
 from homeassistant.const import ATTR_MODEL, ATTR_SW_VERSION
@@ -8,7 +9,6 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
-    ATTR_BATTERY_KIND,
     BATTERY_KIND_HARDWIRED,
     DOMAIN,
     FIRMWARE,
@@ -48,6 +48,7 @@ class HDEntity(CoordinatorEntity[PowerviewShadeUpdateCoordinator]):
         """Return the device_info of the device."""
         firmware = self._device_info.firmware
         sw_version = f"{firmware[FIRMWARE_REVISION]}.{firmware[FIRMWARE_SUB_REVISION]}.{firmware[FIRMWARE_BUILD]}"
+        initial = initial_api_str(self.coordinator.shades.request.api_version)
         return DeviceInfo(
             connections={(dr.CONNECTION_NETWORK_MAC, self._device_info.mac_address)},
             identifiers={(DOMAIN, self._device_info.serial_number)},
@@ -56,7 +57,7 @@ class HDEntity(CoordinatorEntity[PowerviewShadeUpdateCoordinator]):
             name=self._device_info.name,
             suggested_area=self._room_name,
             sw_version=sw_version,
-            configuration_url=f"http://{self._device_info.hub_address}/api/shades",
+            configuration_url=f"http://{self._device_info.hub_address}/{initial}/shades",
         )
 
 
@@ -75,9 +76,7 @@ class ShadeEntity(HDEntity):
         super().__init__(coordinator, device_info, room_name, shade.id)
         self._shade_name = shade_name
         self._shade = shade
-        self._is_hard_wired = bool(
-            shade.raw_data.get(ATTR_BATTERY_KIND) == BATTERY_KIND_HARDWIRED
-        )
+        self._is_hard_wired = bool(shade.get_power_source() == BATTERY_KIND_HARDWIRED)
 
     @property
     def positions(self) -> PowerviewShadePositions:

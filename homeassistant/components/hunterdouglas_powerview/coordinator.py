@@ -49,6 +49,9 @@ class PowerviewShadeUpdateCoordinator(DataUpdateCoordinator[PowerviewShadeData])
             raise UpdateFailed("Failed to fetch new shade data")
 
         # only update if shade_entries is valid
-        self.data.store_group_data(shade_entries[SHADE_DATA])
+        data = shade_entries
+        if self.shades.request.api_version < 3:
+            data = shade_entries[SHADE_DATA]
+        self.data.store_group_data(data)
 
         return self.data

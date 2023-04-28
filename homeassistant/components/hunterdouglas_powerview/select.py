@@ -14,13 +14,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
-    ATTR_BATTERY_KIND,
     DOMAIN,
     POWER_SUPPLY_TYPE_MAP,
     POWER_SUPPLY_TYPE_REVERSE_MAP,
     ROOM_ID_IN_SHADE,
     ROOM_NAME_UNICODE,
     SHADE_BATTERY_LEVEL,
+    SHADE_BATTERY_STATUS,
 )
 from .coordinator import PowerviewShadeUpdateCoordinator
 from .entity import ShadeEntity
@@ -50,7 +50,9 @@ DROPDOWNS: Final = [
         name="Power Source",
         icon="mdi:power-plug-outline",
         current_fn=lambda shade: POWER_SUPPLY_TYPE_MAP.get(
-            shade.raw_data.get(ATTR_BATTERY_KIND), None
+            shade.get_power_source(),
+            None
+            # shade.raw_data.get(ATTR_BATTERY_KIND), None
         ),
         options=list(POWER_SUPPLY_TYPE_MAP.values()),
         select_fn=lambda shade, option: shade.set_power_source(
@@ -70,7 +72,10 @@ async def async_setup_entry(
     entities = []
     for raw_shade in pv_entry.shade_data.values():
         shade: BaseShade = PvShade(raw_shade, pv_entry.api)
-        if SHADE_BATTERY_LEVEL not in shade.raw_data:
+        if not any(
+            attr in [SHADE_BATTERY_LEVEL, SHADE_BATTERY_STATUS]
+            for attr in shade.raw_data
+        ):
             continue
         name_before_refresh = shade.name
         room_id = shade.raw_data.get(ROOM_ID_IN_SHADE)
