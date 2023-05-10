@@ -26,6 +26,7 @@ from .const import (
     ROOM_NAME_UNICODE,
     SHADE_BATTERY_LEVEL,
     SHADE_BATTERY_LEVEL_MAX,
+    SHADE_BATTERY_LEVEL_MAX_V2,
     SHADE_BATTERY_STATUS,
 )
 from .coordinator import PowerviewShadeUpdateCoordinator
@@ -56,11 +57,10 @@ class PowerviewSensorDescription(
 def battery_native_value(shade: PvShade):
     """Get the battery value based on version of API."""
     if shade.request.api_version >= 3:
-        return (
-            round(shade.raw_data[SHADE_BATTERY_STATUS] / SHADE_BATTERY_LEVEL_MAX) * 100
+        return round(
+            shade.raw_data[SHADE_BATTERY_STATUS] / SHADE_BATTERY_LEVEL_MAX * 100
         )
-    # API Version <= 2 is on 0 to 100 scale which is the same as HA.
-    return shade.raw_data[SHADE_BATTERY_LEVEL]
+    return round(shade.raw_data[SHADE_BATTERY_LEVEL] / SHADE_BATTERY_LEVEL_MAX_V2 * 100)
 
 
 def signal_native_value(shade: PvShade):
